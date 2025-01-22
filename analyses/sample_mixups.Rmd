@@ -1,0 +1,86 @@
+---
+title: "Sample mixups"
+author: "Daniel Munro"
+date: "12/3/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+suppressPackageStartupMessages(library(tidyverse))
+
+# samples <- c(
+#     "00077E7B99", "00077E8FA0", "00077E9095", "00077E96CF",
+#     
+#     rev(c("00077E9D1B", "0007D3C437", "00077E9010", "000792A1F9", "000792A14D", "00077E993E",
+#     "00077E94A0", "00077E9C26", "000789990A")),
+#     
+#     "00077E7AC5", "00077E7B8A", "00077E7BF8", "00077E7C6D", "00077E7CBE",
+#     "00077E83F8", "00077E8978", "00077E8985", "00077E8A23", "00077E8AE2", "00077E8BF4",
+#     "00077E8F69", "00077E8FAC", "00077E9288", "00077E9391", "00077E9421", "00077E9434",
+#     "00077E94CF", "00077E957E", "00077E96C6", "00077E988C", "00077E995B", "00077E9963",
+#     "00077E9968", "00077E9993", "00077E9995", "00077E9ACA", "00077E9BB7", "00077E9BD9",
+#     "00077E9C1F", "00077E9E77", "00077E9F3A", "000792A2B8", "000792A3E7", "0007A027D6",
+#     "0007D2B45D", "0007D2C474", "0007D2C6E2", "0007D2CBB5", "0007D48378"
+# )
+samples <- c(
+    "00077E9D1B", "0007D3C437", "00077E9010", "000792A1F9", "000792A14D", "00077E993E",
+    "00077E94A0", "00077E9C26", "000789990A",
+    
+    "00077E96CF", "00077E7B99", "00077E8FA0", "00077E9095",
+    
+    "00077E7AC5", "00077E7B8A", "00077E7BF8", "00077E7C6D", "00077E7CBE",
+    "00077E83F8", "00077E8978", "00077E8985", "00077E8A23", "00077E8AE2", "00077E8BF4",
+    "00077E8F69", "00077E8FAC", "00077E9288", "00077E9391", "00077E9421", "00077E9434",
+    "00077E94CF", "00077E957E", "00077E96C6", "00077E988C", "00077E995B", "00077E9963",
+    "00077E9968", "00077E9993", "00077E9995", "00077E9ACA", "00077E9BB7", "00077E9BD9",
+    "00077E9C1F", "00077E9E77", "00077E9F3A", "000792A2B8", "000792A3E7", "0007A027D6",
+    "0007D2B45D", "0007D2C474", "0007D2C6E2", "0007D2CBB5", "0007D48378"
+)
+
+simil <- read_tsv("../data/qc/rna_to_geno_similarity.tsv",
+                  col_types = cols(RNA_ID = "c", .default = "d")) |>
+    pivot_longer(-RNA_ID, names_to = "geno_ID", values_to = "similarity") |>
+    mutate(`RNA ID` = factor(RNA_ID, levels = samples),
+           `geno ID` = factor(geno_ID, levels = samples))
+
+top <- simil |>
+    group_by(RNA_ID) |>
+    top_n(1, similarity) |>
+    mutate(match = RNA_ID == geno_ID)
+```
+
+```{r}
+simil |>
+    ggplot(aes(x = geno_ID, y = RNA_ID, fill = similarity)) +
+    geom_tile() +
+    coord_fixed() +
+    scale_fill_viridis_c() +
+    theme(axis.text.x = element_text(hjust = 1, vjust = 0.5, angle = 90))
+```
+
+```{r}
+simil |>
+    ggplot(aes(x = `geno ID`, y = `RNA ID`, fill = similarity)) +
+    geom_tile() +
+    coord_fixed() +
+    scale_fill_viridis_c() +
+    theme(axis.text.x = element_text(hjust = 1, vjust = 0.5, angle = 90))
+```
+
+Filter out matches:
+
+```{r}
+simil |>
+    filter(!(RNA_ID %in% top$RNA_ID[top$match]),
+           !(geno_ID %in% top$geno_ID[top$match])) |>
+        ggplot(aes(x = geno_ID, y = RNA_ID, fill = similarity)) +
+    geom_tile() +
+    coord_fixed() +
+    scale_fill_viridis_c() +
+    theme(axis.text.x = element_text(hjust = 1, vjust = 0.5, angle = 90))
+```
+

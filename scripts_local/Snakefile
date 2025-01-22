@@ -1,0 +1,60 @@
+from snakemake.remote.SFTP import RemoteProvider
+SFTP = RemoteProvider(username="redacted")
+
+EQTL_FILES = [
+    expand("tensorqtl/{method}.cis_qtl.txt.gz",
+    #      method=["main", "main3", "main4", "basic", "basic3", "basic4"]),
+           method=["basic4", "main4", "main5"]),
+    ["tensorqtl/main5.cis_qtl_signif.txt.gz"],
+    # expand(
+    #     "tensorqtl/{method}/{method}.cis_qtl_pairs.{chrn}.parquet",
+    #     # method=["main", "main3", "main4", "basic", "basic3", "basic4"],
+    #     method=["basic4"],
+    #     chrn=range(1, 21)
+    # ),
+    ["qtl2/eyes.gene_var_pval.tsv.gz"],
+    expand("afc/{method}.aFC.txt", method=["main", "main3", "main4", "main5", "basic", "basic3", "basic4"]),
+    expand("afc/{method}.ASE_aFC.txt",  method=["main", "main3", "main4", "main5", "basic", "basic3", "basic4"]),    
+]
+DOWNLOAD = [
+    # ["afc/expr_matrix.bed.gz"],
+]
+EQTL_FILES = [x for sublist in EQTL_FILES for x in sublist]
+DOWNLOAD = [x for sublist in DOWNLOAD for x in sublist]
+DOWNLOAD.extend(EQTL_FILES)
+# # DOWNLOAD = expand("redacted.edu/home/redacted/data/{path}", path=DOWNLOAD)
+# DOWNLOAD = expand("data/{path}", path=DOWNLOAD)
+DOWNLOAD = "\n".join(DOWNLOAD)  # rsync expects one file name per line
+
+rule all:
+    input:
+        "data/updated",
+        "data/eqtls.txt",
+
+rule download:
+    output:
+        touch("data/updated")
+    params:
+        files = DOWNLOAD
+    shell:
+        "rsync -av --files-from=<(echo '{params.files}') redacted:~/eyes/data/ data/"
+
+rule eqtl_results:
+    input:
+        src = "src/assemble_eqtls.R",
+        files = expand("data/{file}", file=EQTL_FILES)
+    output:
+        "data/eqtls.txt"
+    shell:
+        "Rscript src/assemble_eqtls.R"
+
+rule all_top_variants:
+    input:
+        perm = "data/tensorqtl/{method}.cis_qtl.txt.gz",
+        nom = expand("data/tensorqtl/{{method}}/{{method}}.cis_qtl_pairs.{chrn}.parquet", chrn=range(1, 21))
+    output:
+        "data/tensorqtl/{method}.cis_qtl_alltop.txt.gz"
+    params:
+        nom_prefix = "data/tensorqtl/{method}/{method}"
+    shell:
+        "python3 ../src/tensorqtl_add_tied_variants.py {input.perm} {params.nom_prefix} {output}"
