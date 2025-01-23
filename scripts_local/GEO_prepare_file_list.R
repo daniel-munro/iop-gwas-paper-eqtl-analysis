@@ -2,14 +2,11 @@ library(tidyverse)
 
 fastq <- read_tsv("data/fastq_map.txt", col_types = "ccc",
                   col_names = c("fastq1", "fastq2", "sample"))
+
 fastq_removed <- read_tsv("data/fastq_map.pre_qc.txt", col_types = "ccc",
                           col_names = c("fastq1", "fastq2", "sample")) |>
     filter(!(fastq1 %in% fastq$fastq1)) |>
     mutate(sample = str_c("Removed_", as.integer(fct_inorder(sample))))
-
-# mismatched <- c("00077E9D1B", "0007D3C437", "00077E9010", "000792A1F9",
-#                 "000792A14D", "00077E993E", "00077E94A0", "00077E9C26",
-#                 "000789990A", "00077E7B99", "00077E8FA0")
 
 ## File list and description per sample to paste into metadata spreadsheet
 
@@ -17,9 +14,7 @@ df <- fastq |>
     bind_rows(fastq_removed) |>
     pivot_longer(c(fastq1, fastq2), names_to = "end", values_to = "fastq") |>
     mutate(fastq = str_replace(fastq, "/s", "_s")) |>
-    group_by(sample) |>
-    mutate(file_n = str_c("file", 1:n())) |>
-    ungroup() |>
+    mutate(file_n = str_c("file", 1:n()), .by = sample) |>
     pivot_wider(id_cols = sample, names_from = file_n, values_from = fastq) |>
     mutate(
         original_id = str_split_fixed(file1, "_", 5)[, 4],

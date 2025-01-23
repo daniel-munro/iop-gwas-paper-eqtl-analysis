@@ -8,12 +8,9 @@
 library(tidyverse)
 
 iop <- c("1" = 151709252, "5" = 23768259, "16" = 76528844)
-# iop_min <- c("1" = 151096891, "5" = 23426708, "16" = 76286915)  # LD > 0.6 window
-# iop_max <- c("1" = 152730623, "5" = 24262026, "16" = 77225982)  # LD > 0.6 window
 iop_min <- c("1" = 150500000, "5" = 23000000, "16" = 75500000)  # Figure limits
 iop_max <- c("1" = 153500000, "5" = 26000000, "16" = 78000000)  # Figure limits
 
-# genes <- read_tsv("data/genes.txt", col_types = "ccc---i-----") |>
 ## Use RGD genes, same info used for figures
 genes_all <- read_tsv("data/reference/GENES_RAT.txt",
                   col_types = cols(ENSEMBL_ID = "c", SYMBOL = "c", CHROMOSOME_6.0 = "c",
@@ -29,7 +26,6 @@ genes_all <- read_tsv("data/reference/GENES_RAT.txt",
     separate_rows(gene_id, sep = ";") |>
     filter(!is.na(gene_id),
            !is.na(start)) |>
-    # filter(!str_detect(gene, "^LOC\\d+$")) |>
     group_by(gene_id) |>
     slice(1) |>
     ungroup() |>
@@ -65,4 +61,4 @@ eqtls <- read_tsv("data/Eye.top_assoc.txt", col_types = "ccicciccdiddddddd") |>
     ungroup() |>
     arrange(as.integer(chrom), tss)
 
-write_tsv(eqtls, "etc/eqtl_table_QTL_regions.txt")
+write_tsv(eqtls, "data/analysis/eqtl_table_QTL_regions.txt")

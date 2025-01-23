@@ -17,19 +17,9 @@ I'm comparing TensorQTL without covariates, with covariates, and R/qtl2. The cov
 - 8 factors for genetic similarity to each of the founder strains
 
 ```{r}
-eqtls <- read_tsv("data/eqtls.txt", col_types = "ccciidddd") %>%
-    filter(qval < 0.05) %>%
+eqtls <- read_tsv("../data/old_pre_qc/eqtls.txt", col_types = "ccciidddd") |>
+    filter(qval < 0.05) |>
     mutate(
-        # label = fct_recode(
-        #     method,
-        #     "TensorQTL, no covariates, raw" = "basic",
-        #     "TensorQTL, no covariates, TPM" = "basic3",
-        #     "TensorQTL, no covariates, TMM/raw" = "basic4",
-        #     "TensorQTL, covariates, raw" = "main",
-        #     "TensorQTL, covariates, TPM" = "main3",
-        #     "TensorQTL, covariates, TMM/raw" = "main4",
-        #     "R/qtl2" = "qtl2"
-        # ),
         expression = fct_collapse(
             method,
             "Read counts" = c("basic", "main", "qtl2"),
@@ -41,38 +31,36 @@ eqtls <- read_tsv("data/eqtls.txt", col_types = "ccciidddd") %>%
             "without covariates" = c("basic", "basic3", "basic4"),
             "with covariates" = c("main", "main3", "main4", "qtl2"),
         ),
-        label = str_c(expression, " ", covar)
-    ) %>%
+        label = str_glue("{expression} {covar}")
+    ) |>
     filter(method != "qtl2")
 ```
 
 ```{r fig.width=8, fig.height=6}
-counts <- eqtls %>%
-    group_by(expression, covar) %>%
+counts <- eqtls |>
     summarise(n_eQTLs = n(),
               n_eQTLs_with_ASE = sum(!is.na(log2_aFC_ASE)),
-              .groups = "drop")
+              .by = c(expression, covar))
 
-corrs <- eqtls %>%
-    filter(!is.na(log2_aFC_ASE) & !is.na(log2_aFC_eQTL)) %>%
-    group_by(expression, covar) %>%
+corrs <- eqtls |>
+    filter(!is.na(log2_aFC_ASE) & !is.na(log2_aFC_eQTL)) |>
     summarise(
         R = cor(log2_aFC_ASE, log2_aFC_eQTL),
         rho = cor(log2_aFC_ASE, log2_aFC_eQTL, method = "s"),
         beta = deming::deming(log2_aFC_eQTL ~ log2_aFC_ASE)$coefficients[2],
-        .groups = "drop"
-    ) %>%
-    left_join(counts, by = c("expression", "covar")) %>%
+        .by = c(expression, covar)
+    ) |>
+    left_join(counts, by = c("expression", "covar"), relationship = "one-to-one") |>
     mutate(
         stats = str_c("R=", format(R, digits = 2),
                       " rho=", format(rho, digits = 2),
                       " β=", format(beta, digits = 2)),
         count = str_glue("n = {n_eQTLs} ({n_eQTLs_with_ASE})")
     )
-eqtls %>%
-    filter(!is.na(log2_aFC_ASE) & !is.na(log2_aFC_eQTL)) %>%
+
+eqtls |>
+    filter(!is.na(log2_aFC_ASE) & !is.na(log2_aFC_eQTL)) |>
     ggplot(aes(x = log2_aFC_ASE, y = log2_aFC_eQTL)) +
-    # facet_wrap(~ label) +
     facet_grid(rows = vars(covar), cols = vars(expression)) +
     geom_point(size = 0.25, alpha = 0.5) +
     geom_text(aes(x = -7.8, y = 7.8, label = stats), data = corrs, hjust = "left") +

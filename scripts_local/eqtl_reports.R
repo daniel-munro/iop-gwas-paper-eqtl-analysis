@@ -2,7 +2,7 @@ library(tidyverse)
 
 genes <- read_tsv("data/genes.txt", col_types = "cc---ci-----")
 
-alleles <- read_tsv("~/code/ratgtex/pipeline_data/geno/alleles.txt.gz", col_types = "ccc",
+alleles <- read_tsv("data/old_unfilt_geno/alleles.txt.gz", col_types = "ccc",
                     col_names = c("variant_id", "ref", "alt"))
 
 afc <- read_tsv("data/Eye.aFC.txt", col_types = "cc--d--") |>
@@ -12,14 +12,15 @@ afc <- read_tsv("data/Eye.aFC.txt", col_types = "cc--d--") |>
 
 top_assoc <- read_tsv("data/Eye.cis_qtl.txt.gz", col_types = "ci----c---dddd-ddd") |>
     rename(gene_id = phenotype_id) |>
-    separate(variant_id, c("chrom", "pos"), sep = ":", convert = TRUE,
-             remove = FALSE) |>
-    mutate(chrom = str_replace(chrom, "chr", "")) |>
-    left_join(afc, by = c("gene_id", "variant_id")) |>
-    left_join(genes, by = "gene_id") |>
+    separate_wider_delim(variant_id, ":", names = c("chrom", "pos"),
+                         cols_remove = FALSE) |>
+    mutate(chrom = str_replace(chrom, "chr", ""),
+           pos = as.integer(pos)) |>
+    left_join(afc, by = c("gene_id", "variant_id"), relationship = "one-to-one") |>
+    left_join(genes, by = "gene_id", relationship = "one-to-one") |>
     mutate(tss_distance = if_else(strand == "+", pos - tss, tss - pos)) |>
     select(-strand, -tss) |>
-    left_join(alleles, by = "variant_id") |>
+    left_join(alleles, by = "variant_id", relationship = "many-to-one") |>
     relocate(gene_name, .after = gene_id) |>
     relocate(tss_distance, .after = af) |>
     relocate(ref, alt, .after = pos)
@@ -35,14 +36,15 @@ top_assoc |>
 eqtls_ind <- read_tsv("data/Eye.cis_independent_qtl.txt.gz",
                       col_types = "ci----c---dddd-cd") |>
     rename(gene_id = phenotype_id) |>
-    separate(variant_id, c("chrom", "pos"), sep = ":", convert = TRUE,
-             remove = FALSE) |>
-    mutate(chrom = str_replace(chrom, "chr", "")) |>
-    left_join(afc, by = c("gene_id", "variant_id")) |>
-    left_join(genes, by = "gene_id") |>
+    separate_wider_delim(variant_id, ":", names = c("chrom", "pos"),
+             cols_remove = FALSE) |>
+    mutate(chrom = str_replace(chrom, "chr", ""),
+           pos = as.integer(pos)) |>
+    left_join(afc, by = c("gene_id", "variant_id"), relationship = "one-to-one") |>
+    left_join(genes, by = "gene_id", relationship = "many-to-one") |>
     mutate(tss_distance = if_else(strand == "+", pos - tss, tss - pos)) |>
     select(-strand, -tss) |>
-    left_join(alleles, by = "variant_id") |>
+    left_join(alleles, by = "variant_id", relationship = "many-to-one") |>
     relocate(gene_name, .after = gene_id) |>
     relocate(tss_distance, .after = af) |>
     relocate(ref, alt, .after = pos)

@@ -6,30 +6,31 @@ output: html_notebook
 ```{r}
 library(tidyverse)
 
-eqtls <- read_tsv("../data/tensorqtl/main5.cis_qtl.txt.gz",
-                 col_types = "ci----cd----d---ddd") %>%
-    rename(gene_id = phenotype_id) %>%
-    arrange(pval_beta) %>%
+eqtls <- read_tsv("../data/old_pre_qc/tensorqtl/main5.cis_qtl.txt.gz",
+                 col_types = "ci----cd----d---ddd") |>
+    rename(gene_id = phenotype_id) |>
+    arrange(pval_beta) |>
     mutate(pval_quant = percent_rank(pval_beta))
 ```
 
 ```{r}
-eqtls %>%
+eqtls |>
     ggplot(aes(x = pval_quant, y = pval_beta)) +
     geom_abline(slope = 1, intercept = 0, color = "gray") +
     geom_point(size = 0.5)
 ```
 
 ```{r}
-eqtls %>%
+eqtls |>
     ggplot(aes(x = pval_quant, y = pval_beta)) +
     geom_abline(slope = 1, intercept = 0, color = "gray") +
     geom_point(size = 0.5) +
     scale_x_log10() +
     scale_y_log10()
 ```
+
 ```{r}
-eqtls %>%
+eqtls |>
     ggplot(aes(x = pval_beta)) +
     geom_histogram(bins = 100)
 ```

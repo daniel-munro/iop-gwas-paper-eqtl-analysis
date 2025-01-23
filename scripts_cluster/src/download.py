@@ -12,5 +12,4 @@ with pysftp.Connection("transfer.uthsc.edu", username="redacted", password="reda
         # sftp.get_r("HS_eyes/RSEM_outputs", ".")
         for fname in files:
             print(fname)
-            # dr = fname.split("/")[0]
             sftp.get(fname, fname)

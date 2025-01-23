@@ -14,12 +14,12 @@ rule vcf_to_plink:
     shell:
         """
         plink2 --make-bed \
-        --vcf {input.vcf} \
-        --keep {input.samples} \
-        --maf 0.01 \
-        --mac 2 \
-        --max-alleles 2 \
-        --out {params.prefix}
+            --vcf {input.vcf} \
+            --keep {input.samples} \
+            --maf 0.01 \
+            --mac 2 \
+            --max-alleles 2 \
+            --out {params.prefix}
         """
 
 

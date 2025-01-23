@@ -12,9 +12,6 @@ parser.add_argument("output", help="output file (TSV)")
 args = parser.parse_args()
 
 perm = pd.read_csv(args.perm_file, sep="\t")
-# cutoff = {}
-# for i in range(perm.shape[0]):
-#     cutoff[perm.phenotype_id[i]] = perm.pval_nominal_threshold[i]
 perm = perm[["phenotype_id", "pval_nominal_threshold"]]
 
 sig = []
@@ -28,7 +25,5 @@ for i in range(1, 21):
     d = d.loc[d.pval_nominal < d.pval_nominal_threshold, :]
     sig.append(d)
 sig = pd.concat(sig, ignore_index=True)
-# sig = sig.rename(columns={"phenotype_id": "gene_id"})
-# sig = sig.drop(columns=["tss_distance"])
 
 sig.to_csv(args.output, sep="\t", index=False, float_format="%g")

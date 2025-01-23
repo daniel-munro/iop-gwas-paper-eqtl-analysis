@@ -6,8 +6,9 @@ library(tidyverse)
 
 geno <- function(filename, ids) {
     snps <- tibble(variant_id = ids) |>
-        separate(variant_id, c("chrom", "pos"), convert = TRUE) |>
-        mutate(chrom = str_replace(chrom, "chr", ""))
+        separate_wider_delim(variant_id, ":", names = c("chrom", "pos")) |>
+        mutate(chrom = str_replace(chrom, "chr", ""),
+               pos = as.integer(pos))
     rng <- with(snps, GRanges(chrom, IRanges(pos, pos)))
     gt <- readGT(filename, param = rng)
     geno <- apply(gt, 2, function(x) c("0|0" = 0, "0|1" = 1, "1|0" = 1, "1|1" = 2)[x])
